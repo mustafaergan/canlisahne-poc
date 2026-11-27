@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Havayolu Dağıtımının Görünmeyen Yolculuğu · Canlı Sahne PoC</title>
-<meta name="description" content="Bir uçak biletinin satış kanalından e-bilete görünmeyen yolculuğu: Canlı Sahne ile etkileşimli PoC.">
+<meta name="description" content="Dört satış kanalı, üç dönem: GDS/EDIFACT bugünü, NDC ile geçiş ve Offer & Order hedefi. Canlı Sahne ile etkileşimli PoC.">
 <style>
-  :root { --zemin: #0b0f1c; --kart: #121a2e; --cizgi: #26314f; --yazi: #eef2fb; --soluk: #9aa6c4; --vurgu: #38bdf8; --iyi: #8fd97a; --kotu: #ff6b6b; }
+  :root { --zemin: #0b0f1c; --kart: #121a2e; --cizgi: #26314f; --yazi: #eef2fb; --soluk: #9aa6c4; --vurgu: #38bdf8; --iyi: #8fd97a; --eski: #c084fc; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--zemin); color: var(--yazi); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
   main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 48px; }
@@ -17,16 +17,22 @@
   video { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #000; border: 1px solid var(--cizgi); }
   .not { color: var(--soluk); font-size: .85rem; margin-top: 8px; }
   h2 { font-size: 1.15rem; margin: 36px 0 12px; }
-  .hat { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 0; margin: 0; list-style: none; }
-  .hat li { background: var(--kart); border: 1px solid var(--cizgi); border-radius: 10px; padding: 8px 12px; font-weight: 600; }
-  .hat li small { display: block; color: var(--soluk); font-weight: 400; font-size: .78rem; }
-  .hat .ok { color: var(--soluk); border: 0; background: none; padding: 0 2px; }
-  .hat .sorunlu { border-color: #b8860b; }
-  .hat .son { border-color: var(--iyi); color: var(--iyi); }
-  .kanallar { color: var(--soluk); margin: 0 0 10px; }
+  .kanallar { color: var(--soluk); margin: 0 0 14px; }
   .kanallar b { color: var(--yazi); }
+  .donemler { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .donem { background: var(--kart); border: 1px solid var(--cizgi); border-radius: 12px; padding: 14px 16px; }
+  .donem h3 { margin: 0 0 4px; font-size: 1.05rem; }
+  .donem h3 span { color: var(--soluk); font: 600 .8rem ui-monospace, Consolas, monospace; margin-right: 6px; }
+  .donem p { margin: 0 0 10px; color: var(--soluk); font-size: .92rem; }
+  .yol { display: flex; flex-wrap: wrap; gap: 4px; padding: 0; margin: 0; list-style: none; font-size: .78rem; }
+  .yol li { border: 1px solid var(--cizgi); border-radius: 999px; padding: 2px 9px; }
+  .yol .eski { border-color: var(--eski); color: var(--eski); }
+  .yol .yeni { border-color: var(--vurgu); color: var(--vurgu); }
+  .donem.gecis { border-color: var(--vurgu); }
   ol.adimlar { padding-left: 1.2em; color: var(--soluk); }
   ol.adimlar b { color: var(--yazi); }
+  .rakamlar { padding-left: 1.2em; color: var(--soluk); }
+  .rakamlar b { color: var(--yazi); }
   a { color: var(--vurgu); }
   footer { margin-top: 40px; color: var(--soluk); font-size: .85rem; border-top: 1px solid var(--cizgi); padding-top: 16px; }
 </style>
@@ -35,37 +41,53 @@
 <main>
   <p class="ust">Canlı Sahne · PoC</p>
   <h1>Havayolu Dağıtımının Görünmeyen Yolculuğu</h1>
-  <p class="alt">Salondaki herkes telefonundan bir uçuş rezervasyonu yapar; perdede bu rezervasyonların satış kanalından e-bilete kadar geçtiği sistemler canlı izlenir. Bazıları yolda takılır.</p>
+  <p class="alt">Salondaki herkes telefonundan bir satış başlatır ve kanalını seçer. Perdede aynı satışlar üç dönemden geçer: bugünkü GDS/EDIFACT dünyası, yeni NDC kapısının açıldığı geçiş ve yalnızca Offer &amp; Order'ın kaldığı hedef. Katılımcılar yolda teklif ve ödeme kararlarını kendileri verir.</p>
 
   <video controls playsinline preload="metadata" poster="kapak.jpg">
-    <source src="havayolu-dagitimi.webm" type="video/webm">
-    Tarayıcınız bu videoyu oynatamıyor. <a href="havayolu-dagitimi.webm">Videoyu indirin</a>.
+    <source src="havayolu-dagitimi-donemler.webm" type="video/webm">
+    Tarayıcınız bu videoyu oynatamıyor. <a href="havayolu-dagitimi-donemler.webm">Videoyu indirin</a>.
   </video>
-  <p class="not">72 saniye · 1080p · altyazılı, sessiz. Kayıt, uygulamanın deneme kopyasında ve örnek adlarla alınmıştır.</p>
+  <p class="not">Yaklaşık 70 saniye · 1080p · altyazılı, sessiz. Kayıt, uygulamanın deneme kopyasında ve örnek adlarla alınmıştır; süreler ve takılma oranları temsilîdir.</p>
 
-  <h2>Akış</h2>
-  <p class="kanallar">Satış kanalı: <b>Web / Mobil</b> · <b>GDS</b> · <b>OTA</b> · <b>Acente</b></p>
-  <ul class="hat">
-    <li>Dağıtım Katmanı<small>API · EDIFACT · NDC</small></li><li class="ok">→</li>
-    <li>Availability<small>yer var mı?</small></li><li class="ok">→</li>
-    <li>Pricing<small>ücret, kural, vergi</small></li><li class="ok">→</li>
-    <li class="sorunlu">Inventory<small>koltuğu düşer · sorunlu</small></li><li class="ok">→</li>
-    <li>Reservation<small>PNR</small></li><li class="ok">→</li>
-    <li class="sorunlu">Payment<small>provizyon · sorunlu</small></li><li class="ok">→</li>
-    <li>Ticketing<small>e-bilet</small></li><li class="ok">→</li>
-    <li class="son">Rezervasyon ve Biletleme</li>
-  </ul>
+  <h2>Akış: dört kanal, üç dönem</h2>
+  <p class="kanallar">Satış kanalı: <b>Web / Mobil</b> · <b>GDS</b> · <b>OTA</b> · <b>Acente</b>. Bütün kanallar önce <b>Kanal kapısı</b>ndan geçer; ayrım burada yapılır.</p>
+  <div class="donemler">
+    <section class="donem">
+      <h3><span>1</span>Bugün</h3>
+      <p>Acente, OTA ve GDS satışı GDS + EDIFACT ile gelir; fiyat dosyalanmış, satış PNR ve e-bilet olarak tutulur.</p>
+      <ul class="yol"><li class="eski">GDS · EDIFACT</li><li class="eski">Eski web satışı</li><li class="eski">Dosyalanmış fiyat (ATPCO)</li><li>Envanter</li><li class="eski">PNR + e-bilet</li><li>Uzlaşma (BSP/ARC)</li></ul>
+    </section>
+    <section class="donem gecis">
+      <h3><span>2</span>Geçiş</h3>
+      <p>Yeni NDC kapısı açılır (THY'de SARP). Web, OTA ve acente yeni kapıdan, GDS eski yoldan gelir. Envanter ortaktır, sipariş PNR ile eşlenir.</p>
+      <ul class="yol"><li class="yeni">NDC kapısı</li><li class="yeni">Dinamik teklif</li><li class="yeni">Sipariş ve ödeme</li><li class="eski">GDS · EDIFACT</li><li class="eski">PNR + e-bilet</li><li>Envanter (ortak)</li></ul>
+    </section>
+    <section class="donem">
+      <h3><span>3</span>Hedef</h3>
+      <p>Bütün kanallar NDC kapısından girer, GDS de NDC ile bağlanır. Teklif ve sipariş tek kayıttır (ONE Order).</p>
+      <ul class="yol"><li class="yeni">NDC kapısı</li><li class="yeni">Dinamik teklif</li><li>Envanter</li><li class="yeni">Sipariş ve ödeme</li><li>Uzlaşma</li></ul>
+    </section>
+  </div>
 
   <h2>Videoda</h2>
   <ol class="adimlar">
-    <li><b>Katılım:</b> perdedeki QR kodu okutulur.</li>
-    <li><b>Rezervasyon:</b> yolcu bileti nereden aldığını ve rotasını seçer.</li>
-    <li><b>Yolculuk:</b> rezervasyonlar dağıtım katmanından çekirdek sistemlere akar; Inventory ve Payment'ta bir kısmı takılır.</li>
-    <li><b>İz:</b> takılan bir rezervasyonun hangi sistemde, hangi hatayla kaldığı görülür.</li>
-    <li><b>Sonuç:</b> her yolcu kendi rezervasyonunun sonucunu telefonunda görür.</li>
+    <li><b>Katılım:</b> perdedeki QR kodu okutulur; her satış kendi kanal şeridinde bekler.</li>
+    <li><b>Bugün:</b> satışlar GDS ve eski yoldan akar.</li>
+    <li><b>Geçiş:</b> yeni kapılar açılır; katılımcı telefonundan teklifini ve ödeme yöntemini seçer, seçimi perdede anında görünür.</li>
+    <li><b>Hedef:</b> bütün kanallar tek kapıdan geçer.</li>
+    <li><b>Karşılaştırma:</b> aynı salonun üç dönemdeki başarı oranı, süresi ve adım sayısı yan yana.</li>
   </ol>
 
-  <footer>Canlı Sahne · <a href="https://canlisahne.com">canlisahne.com</a> · Sunumcu panelinde hazır akış: "Havayolu dağıtımı"</footer>
+  <h2>Dünyada dağıtım (yaklaşık)</h2>
+  <ul class="rakamlar">
+    <li>NDC'nin dolaylı satıştaki payı <b>yaklaşık %24</b> (2026 başı); 2023'te yaklaşık %11.</li>
+    <li>Bölgeye göre: Avrupa <b>yaklaşık %31</b>, Kuzey Amerika <b>yaklaşık %18</b>.</li>
+    <li>Lufthansa Grubu: dolaylı satışın <b>yaklaşık yarısı</b> NDC.</li>
+    <li>IATA hedefi: 2030'a kadar <b>%100 Offers &amp; Orders</b>.</li>
+  </ul>
+  <p class="not">Kaynak: IATA, ARC ve sektör raporları; rakamlar yaklaşıktır.</p>
+
+  <footer>Canlı Sahne · <a href="https://canlisahne.com">canlisahne.com</a> · Sunumcu panelinde hazır akış: "Havayolu Dağıtımının Görünmeyen Yolculuğu"</footer>
 </main>
 </body>
 </html>
